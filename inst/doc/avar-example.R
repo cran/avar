@@ -29,7 +29,7 @@ rw = 13:15
 fit = avlr(allan_variance, wn = wn, rw = rw)
 fit
 
-## ---- fig.height = 7, fig.width = 7, fig.align = 'center', fig.cap = "Empirical AV with AV implied by the latent model WN + RW"----
+## ---- fig.height = 7, fig.width = 7, fig.align = 'center', fig.cap = "Empirical AV with AV implied by the latent model"----
 plot(fit)
 plot(fit, decomp = TRUE)
 
@@ -41,4 +41,16 @@ plot(fit, decomp = TRUE)
 ## ---- warning = F, echo = F, eval = T------------------------------------
 load("fit_ci.rda")
 fit_ci$ci
+
+## ---- fig.height = 8, fig.width = 8, fig.align = 'center', fig.cap = "Allan Variance Representation."----
+data("navchip_av")
+plot(navchip_av)
+
+## ------------------------------------------------------------------------
+fit2 = avlr(navchip_av, qn_gyro = 1:4, wn_gyro = 6:8, rw_gyro = 10:13,
+           wn_acc = 1:6, rw_acc = 14:16)
+fit2
+
+## ---- fig.height = 8, fig.width = 8, fig.align = 'center', fig.cap = "Empirical AV with AV implied by the latent model"----
+plot(fit2)
 
