@@ -2,7 +2,7 @@
 % Please edit documentation in R/avlr.R
 \name{plot.avlr}
 \alias{plot.avlr}
-\title{Plot the AVLR with the Allan Deviation}
+\title{Plot the AVLR with the Allan Variance}
 \usage{
 \method{plot}{avlr}(
   x,
@@ -20,6 +20,7 @@
   point_cex = NULL,
   point_pch = NULL,
   show_scales = FALSE,
+  text_legend_cex = 1,
   ...
 )
 }
@@ -36,7 +37,7 @@
 
 \item{main}{A \code{string} that gives an overall title for the plot.}
 
-\item{col_ad}{A \code{string} that specifies the color of the line allan deviation line.}
+\item{col_ad}{A \code{string} that specifies the color of the line allan variance line.}
 
 \item{col_ci}{A \code{string} that specifies the color of the shaded area covered by the confidence intervals.}
 
@@ -54,13 +55,15 @@
 
 \item{show_scales}{A \code{boolean} that specifies if the scales used for each process should be plotted.}
 
+\item{text_legend_cex}{A \code{double} that specifies the size of the legend text.}
+
 \item{...}{Additional arguments affecting the plot.}
 }
 \value{
 Plot of Allan deviation and relative confidence intervals for each scale.
 }
 \description{
-Displays a plot of the Allan deviation (AD) with the CI values and the AD implied by the estimated parameters.
+Displays a plot of the Allan variance (AV) with the CI values and the AV implied by the estimated parameters.
 }
 \examples{
 \donttest{
@@ -74,7 +77,7 @@ plot.avlr(av)
 plot.avlr(av, decomp = TRUE, main = "Simulated white noise", xlab = "Scales")
 plot.avlr(av, units = "sec", legend_position = "topright")
 plot.avlr(av, col_ad = "darkred", col_ci = "pink")
-plot(fit, decomp = TRUE, show_scales = TRUE)
+plot.avlr(av, decomp = TRUE, show_scales = TRUE)
 }
 }
 \author{

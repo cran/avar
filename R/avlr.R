@@ -140,6 +140,8 @@ avlr.default = function(x, qn = NULL, wn = NULL, rw = NULL, dr = NULL,
 #' @param scales A \code{vec} of the scales.
 #' @return       A \code{list} with the estimated parameters.
 fit_avlr = function(qn, wn, rw, dr, ad, scales){
+
+
   # Number of processes needed
   n_processes = 4 - sum(sapply(list(qn,wn,rw,dr), is.null))
 
@@ -442,13 +444,13 @@ print.imu_avlr = function(x, ...) {
 #' @title Plot the AVLR with the Allan Deviation for IMU
 #'
 #' @description
-#' Displays a plot of the Allan deviation (AD) with the CI values and the AD implied by the estimated parameters for the IMU.
+#' Displays a plot of the Allan variance (AV) with the CI values and the AV implied by the estimated parameters for the IMU.
 #' @method plot imu_avlr
 #' @param x                An \code{avlr} object.
 #' @param xlab             A \code{string} that gives a title for the x axis.
 #' @param ylab             A \code{string} that gives a title for the y axis.
 #' @param main             A \code{string} that gives an overall title for the plot.
-#' @param col_ad           A \code{string} that specifies the color of the line allan deviation line.
+#' @param col_ad           A \code{string} that specifies the color of the line allan variance line.
 #' @param col_ci           A \code{string} that specifies the color of the shaded area covered by the confidence intervals.
 #' @param nb_ticks_x       An \code{integer} that specifies the maximum number of ticks for the x-axis.
 #' @param nb_ticks_y       An \code{integer} that specifies the maximum number of ticks for the y-axis.
@@ -468,6 +470,18 @@ print.imu_avlr = function(x, ...) {
 plot.imu_avlr = function(x, xlab = NULL, ylab = NULL, main = NULL,
                          col_ad = NULL, col_ci = NULL, nb_ticks_x = NULL, nb_ticks_y = NULL,
                          ci_ad = NULL, point_pch = NULL, point_cex = NULL, ...){
+
+  #for debugging
+  # xlab = NULL; ylab = NULL; main = NULL;
+  # col_ad = NULL; col_ci = NULL; nb_ticks_x = NULL; nb_ticks_y = NULL;
+  # ci_ad = NULL; point_pch = NULL; point_cex = NULL
+  # load("~/github_repo/avar/data/ln200_av.rda")
+  # fit_ln200 = avlr(ln200_av, wn_gyro = 1:18, qn_acc = 1:16, rw_acc = 18:22)
+  # x = fit_ln200
+  # class(fit_ln200)
+
+
+
   type = unique(x$imu_av$type)
 
   if ("Gyroscope" %in% type){
@@ -488,14 +502,28 @@ plot.imu_avlr = function(x, xlab = NULL, ylab = NULL, main = NULL,
   m = length(x$imu_av$avar)
   J = length(x$imu_av$avar[[1]]$allan)
 
+  #define empty matrices for CI of allan variance
+  lci_mat = uci_mat = matrix(NA, ncol= m, nrow = J)
+
+  #calculate CI for allan variance for all ts
+  for(i in seq(m)){
+    lci_mat[,i] = x$imu_av$avar[[i]]$allan - x$imu_av$avar[[i]]$errors*x$imu_av$avar[[i]]$allan
+    uci_mat[,i] = x$imu_av$avar[[i]]$allan + x$imu_av$avar[[i]]$errors*x$imu_av$avar[[i]]$allan
+  }
+
   # remove negative CI values
   index_to_remove = c()
   for (i in 1:m) {
-    if(length(which(x$imu_av$avar[[i]]$lci<0)) > 0){
-      index_to_remove = c(index_to_remove, which(x$imu_av$avar[[i]]$lci<0))
+    if(length(which(lci_mat[,i]<0)) > 0){
+      index_to_remove = c(index_to_remove, which(lci_mat[,i]<0))
     }
   }
-  index_to_remove = unique(index_to_remove)
+  if(!is.null(index_to_remove)){
+    index_to_remove = unique(index_to_remove)
+  }else{
+    index_to_remove = 0
+  }
+
   index_to_keep = which(seq(1:J) != index_to_remove)
 
   J = length(index_to_keep)
@@ -504,8 +532,8 @@ plot.imu_avlr = function(x, xlab = NULL, ylab = NULL, main = NULL,
   ci_up = ci_lw = av = matrix(NA, J, m)
 
   for (i in 1:m){
-    ci_up[,i] = x$imu_av$avar[[i]]$uci[index_to_keep]
-    ci_lw[,i] = x$imu_av$avar[[i]]$lci[index_to_keep]
+    ci_up[,i] = uci_mat[,i][index_to_keep]
+    ci_lw[,i] = lci_mat[,i][index_to_keep]
     av[,i] = x$imu_av$avar[[i]]$allan[index_to_keep]
   }
 
@@ -558,7 +586,7 @@ plot.imu_avlr = function(x, xlab = NULL, ylab = NULL, main = NULL,
   }
 
   if (is.null(ylab)){
-    ylab = expression(paste("Allan Deviation ", phi, sep = ""))
+    ylab = expression(paste("Allan Variance ", hat(phi)^2, sep = ""))
   }
 
 
@@ -567,7 +595,7 @@ plot.imu_avlr = function(x, xlab = NULL, ylab = NULL, main = NULL,
 
   # Gyro
   if (!is.null(gyro_index)){
-    y_range = c(min(ci_lw[,gyro_index]), max(c(ci_up[,gyro_index], x$gyro$implied_ad[1:length(scales)])))
+    y_range = c(min(ci_lw[,gyro_index]), max(c(ci_up[,gyro_index], x$gyro$implied_ad[1:length(scales)]^2)))
     y_low = floor(log10(y_range[1]))
     y_high = ceiling(log10(y_range[2]))
 
@@ -596,27 +624,27 @@ plot.imu_avlr = function(x, xlab = NULL, ylab = NULL, main = NULL,
       abline(h = 10^y_ticks, col = "grey85")
       abline(v = 10^x_ticks, col = "grey85")
 
-      # CI for AD
+      # CI for AV
       if(ci_ad == TRUE || is.null(ci_ad)){
         polygon(c(scales, rev(scales)), c(ci_lw[,gyro_index[i]], rev(ci_up[,gyro_index[i]])),
                 border = NA, col = col_ci)
       }
 
-      # Add AD
-      lines(scales, sqrt(av[,gyro_index[i]]), type = "l", col = col_ad, pch = 16)
-      lines(scales, sqrt(av[,gyro_index[i]]), type = "p", col = col_ad, pch = point_pch, cex = point_cex)
+      # Add AV
+      lines(scales, (av[,gyro_index[i]]), type = "l", col = col_ad, pch = 16)
+      lines(scales, (av[,gyro_index[i]]), type = "p", col = col_ad, pch = point_pch, cex = point_cex)
 
       if (is.null(accel_index)){
         axis(1, at = 10^x_ticks, labels = x_labels, padj = -0.2, cex = 1.25)
       }
 
-      lines(scales,x$gyro$implied_ad[1:length(scales)], type = "b", lwd = 1.75, col = "#F47F24", pch = 1, cex = 1.5)
+      lines(scales,x$gyro$implied_ad[1:length(scales)]^2, type = "l", lwd = 1.75, col = "#F47F24", pch = 1, cex = 1.5)
     }
   }
 
   # Accel
   if (!is.null(accel_index)){
-    y_range = c(min(ci_lw[,accel_index]), max(c(ci_up[,accel_index], x$acc$implied_ad[1:length(scales)])))
+    y_range = c(min(ci_lw[,accel_index]), max(c(ci_up[,accel_index], x$acc$implied_ad[1:length(scales)]^2)))
     y_low = floor(log10(y_range[1]))
     y_high = ceiling(log10(y_range[2]))
 
@@ -651,17 +679,17 @@ plot.imu_avlr = function(x, xlab = NULL, ylab = NULL, main = NULL,
       abline(h = 10^y_ticks, col = "grey85")
       abline(v = 10^x_ticks, col = "grey85")
 
-      # CI for AD
+      # CI for AV
       if(ci_ad == TRUE || is.null(ci_ad)){
         polygon(c(scales, rev(scales)), c(ci_lw[,accel_index[i]], rev(ci_up[,accel_index[i]])),
                 border = NA, col = col_ci)
       }
 
-      lines(scales,x$acc$implied_ad[1:length(scales)], type = "b", lwd = 1.75, col = "#F47F24", pch = 1, cex = 1.5)
+      lines(scales,x$acc$implied_ad[1:length(scales)]^2, type = "l", lwd = 1.75, col = "#F47F24", pch = 1, cex = 1.5)
 
-      # Add AD
-      lines(scales, sqrt(av[,accel_index[i]]), type = "l", col = col_ad, pch = 16)
-      lines(scales, sqrt(av[,accel_index[i]]), type = "p", col = col_ad, pch = point_pch, cex = point_cex)
+      # Add AV
+      lines(scales, (av[,accel_index[i]]), type = "l", col = col_ad, pch = 16)
+      lines(scales, (av[,accel_index[i]]), type = "p", col = col_ad, pch = point_pch, cex = point_cex)
       axis(1, at = 10^x_ticks, labels = x_labels, padj = -0.2, cex = 1.25)
     }
   }
@@ -672,10 +700,10 @@ plot.imu_avlr = function(x, xlab = NULL, ylab = NULL, main = NULL,
 }
 
 
-#' @title Plot the AVLR with the Allan Deviation
+#' @title Plot the AVLR with the Allan Variance
 #'
 #' @description
-#' Displays a plot of the Allan deviation (AD) with the CI values and the AD implied by the estimated parameters.
+#' Displays a plot of the Allan variance (AV) with the CI values and the AV implied by the estimated parameters.
 #' @method plot avlr
 #' @param x                An \code{avlr} object.
 #' @param decomp           A \code{boolean} that determines whether the contributions of each individual model are plotted.
@@ -683,7 +711,7 @@ plot.imu_avlr = function(x, xlab = NULL, ylab = NULL, main = NULL,
 #' @param xlab             A \code{string} that gives a title for the x axis.
 #' @param ylab             A \code{string} that gives a title for the y axis.
 #' @param main             A \code{string} that gives an overall title for the plot.
-#' @param col_ad           A \code{string} that specifies the color of the line allan deviation line.
+#' @param col_ad           A \code{string} that specifies the color of the line allan variance line.
 #' @param col_ci           A \code{string} that specifies the color of the shaded area covered by the confidence intervals.
 #' @param nb_ticks_x       An \code{integer} that specifies the maximum number of ticks for the x-axis.
 #' @param nb_ticks_y       An \code{integer} that specifies the maximum number of ticks for the y-axis.
@@ -692,6 +720,7 @@ plot.imu_avlr = function(x, xlab = NULL, ylab = NULL, main = NULL,
 #' @param point_cex        A \code{double} that specifies the size of each symbol to be plotted.
 #' @param point_pch        A \code{double} that specifies the symbol type to be plotted.
 #' @param show_scales      A \code{boolean} that specifies if the scales used for each process should be plotted.
+#' @param text_legend_cex  A \code{double} that specifies the size of the legend text.
 #' @param ...              Additional arguments affecting the plot.
 #' @return Plot of Allan deviation and relative confidence intervals for each scale.
 #' @author Stephane Guerrier and Justin Lee
@@ -708,16 +737,28 @@ plot.imu_avlr = function(x, xlab = NULL, ylab = NULL, main = NULL,
 #' plot.avlr(av, decomp = TRUE, main = "Simulated white noise", xlab = "Scales")
 #' plot.avlr(av, units = "sec", legend_position = "topright")
 #' plot.avlr(av, col_ad = "darkred", col_ci = "pink")
-#' plot(fit, decomp = TRUE, show_scales = TRUE)
+#' plot.avlr(av, decomp = TRUE, show_scales = TRUE)
 #' }
 plot.avlr = function(x, decomp = FALSE,
                      units = NULL, xlab = NULL, ylab = NULL, main = NULL,
                      col_ad = NULL, col_ci = NULL, nb_ticks_x = NULL, nb_ticks_y = NULL,
                      legend_position = NULL, ci_ad = NULL, point_cex = NULL,
-                     point_pch = NULL, show_scales = FALSE, ...){
+                     point_pch = NULL, show_scales = FALSE, text_legend_cex = 1, ...){
 
+  # #for debugging
+  # decomp = TRUE;
+  # units = NULL; xlab = NULL; ylab = NULL; main = NULL;
+  # col_ad = NULL; col_ci = NULL; nb_ticks_x = NULL; nb_ticks_y = NULL;
+  # legend_position = NULL; ci_ad = NULL; point_cex = NULL;
+  # point_pch = NULL; show_scales = TRUE;text_legend_cex = 1
+  #
+  # load("~/github_repo/avar/data/imar_av.rda")
+  # imar_gyro_x = imar_av$avar$`Gyro. X`
+  # imar_gyro_x_mod = avlr(imar_gyro_x, wn = 1:14)
+  # x=imar_gyro_x_mod
 
   # Labels
+  #xlabel
   if (is.null(xlab)){
     if (is.null(units)){
       xlab = expression(paste("Scale ", tau, sep =""))
@@ -726,6 +767,7 @@ plot.avlr = function(x, decomp = FALSE,
     }
   }
 
+  #ylabel
   if (is.null(ylab)){
     ylab = expression(paste("Allan Deviation ", phi, sep = ""))
   }else{
@@ -734,7 +776,7 @@ plot.avlr = function(x, decomp = FALSE,
 
   # Main Title
   if (is.null(main)){
-    main = "Allan Deviation Representation"
+    main = "Allan Variance Representation"
   }
 
   # Line and CI colors
@@ -757,7 +799,7 @@ plot.avlr = function(x, decomp = FALSE,
   }
 
   #compute y range
-  y_range = range(cbind(x$av$adev - x$av$adev*x$av$errors, x$av$adev + x$av$adev*x$av$errors))
+  y_range = range(cbind(x$av$allan - x$av$allan*x$av$errors, x$av$allan + x$av$allan*x$av$errors, x$implied_ad^2))
   y_low = floor(log10(y_range[1]))
   y_high = ceiling(log10(y_range[2]))
 
@@ -770,17 +812,20 @@ plot.avlr = function(x, decomp = FALSE,
     nb_ticks_y = 5
   }
 
+  # x ticks
   x_ticks = seq(x_low, x_high, by = 1)
   if (length(x_ticks) > nb_ticks_x){
     x_ticks = x_low + ceiling((x_high - x_low)/(nb_ticks_x + 1))*(0:nb_ticks_x)
   }
 
-  if(length(x$av$clusters) >= 10){
+  #define xlabels
+  if(length(x$av$levels) >= 10){
     x_labels = sapply(x_ticks, function(i) as.expression(bquote(10^ .(i))))
   }else{
     x_labels = sapply(x_ticks, function(i) as.expression(bquote(2^ .(i))))
   }
 
+  # y ticks
   y_ticks <- seq(y_low, y_high, by = 1)
   if (length(y_ticks) > nb_ticks_y){
     y_ticks = y_low + ceiling((y_high - y_low)/(nb_ticks_y + 1))*(0:nb_ticks_y)
@@ -795,11 +840,23 @@ plot.avlr = function(x, decomp = FALSE,
     legend_position = "bottomleft"
     #}
   }
-
+  #par("usr")
   # Main Plot
   plot(NA, xlim = x_range, ylim = y_range, xlab = xlab, ylab = ylab,
-       log = "xy", xaxt = 'n', yaxt = 'n', bty = "n", ann = FALSE)
+      log = "xy", xaxt = 'n', yaxt = 'n', bty = "n", ann = FALSE)
+
   win_dim = par("usr")
+
+  #replot main plot with extra space on top for main title ploted later
+  y_vec_2 = 10^c(win_dim[4], win_dim[4],
+               win_dim[4] - .15*(win_dim[4] - win_dim[3]),
+               win_dim[4] - .15*(win_dim[4] - win_dim[3]))
+
+  space_title =    y_vec_2[1] - y_vec_2[4]
+  par(new = TRUE)
+  plot(NA, xlim = x_range, ylim = c(y_range[1], y_range[2]+ 5*space_title), xlab = xlab, ylab = ylab,
+       log = "xy", xaxt = 'n', yaxt = 'n', bty = "n", ann = FALSE)
+
 
   #par(new = TRUE)
   #plot(NA, xlim = x_range, ylim = 10^c(win_dim[3], win_dim[4] + 0.09*(win_dim[4] - win_dim[3])), xlab = xlab, ylab = ylab, log = "xy", xaxt = 'n', yaxt = 'n', bty = "n")
@@ -814,7 +871,7 @@ plot.avlr = function(x, decomp = FALSE,
   abline(h = 10^y_ticks, lty = 1, col = "grey95")
 
   #y_ticks = y_ticks[(2^y_ticks) < 10^(win_dim[4] - 0.09*(win_dim[4] - win_dim[3]))]
-  y_labels = y_labels[1:length(y_ticks)]
+
 
   #x axis
   if(length(x$av$levels) >=10){
@@ -823,12 +880,28 @@ plot.avlr = function(x, decomp = FALSE,
     axis(1, at = 2^x_ticks, labels = x_labels, padj = 0.3)
   }
 
+  #identify maximum ylim point before title and delete last tick if higher than limit of the title box
+  y_vec = 10^c(win_dim[4], win_dim[4],
+               win_dim[4] - 0.09*(win_dim[4] - win_dim[3]),
+               win_dim[4] - 0.09*(win_dim[4] - win_dim[3]))
+  ylim_plot = y_vec[3]
+
   #yaxis
+  #plot axis without ticks and labels
+  axis(side = 2, labels = F, at = range(10^y_ticks), tck = 0)
+
+  #check if tick last actual tick is higher thant begining of the main title box
+  if(10^y_ticks[length(y_ticks)] > ylim_plot){
+    y_ticks = y_ticks[-length(y_ticks)]
+  }
+
+  #ylabels
+  y_labels = y_labels[1:length(y_ticks)]
   axis(2, at = 10^y_ticks, labels = y_labels, padj = -0.2)
 
   # CI for AD
   if (ci_ad == TRUE || is.null(ci_ad)){
-    polygon(c(x$av$levels, rev(x$av$levels)), c(x$av$adev - x$av$errors*x$av$adev, rev(x$av$adev + x$av$errors*x$av$adev)),
+    polygon(c(x$av$levels, rev(x$av$levels)), c(x$av$allan - x$av$errors*x$av$allan, rev(x$av$allan + x$av$errors*x$av$allan)),
             border = NA, col = col_ci)
   }
 
@@ -847,15 +920,15 @@ plot.avlr = function(x, decomp = FALSE,
   if(decomp == TRUE){
     # Plot lines of decomp theo
     for (i in 1:U){
-      lines(x$av$levels, x$implied_ad_decomp[,i], col = col_decomp[i])
+      lines(x$av$levels, (x$implied_ad_decomp[,i])^2, col = col_decomp[i])
     }
   }
-  # Plot implied AD
-  lines(t(x$av$levels),x$implied_ad, type = "b", lwd = 2, col = "#F47F24", pch = 1, cex = 1.5)
+  # Plot implied AV
+  lines(t(x$av$levels),x$implied_ad^2, type = "b", lwd = 2, col = "#F47F24", pch = 1, cex = 1.5)
   #lines(t(x$av$levels),x$implied_ad, type = "p", lwd = 2, col = "#F47F24", pch = 1, cex = 1.5)
 
-  # Add AD
-  lines(x$av$levels, x$av$adev, type = "l", col = col_ad, pch = 16)
+  # Add AV
+  lines(x$av$levels, x$av$allan, type = "l", col = col_ad, pch = 16)
 
   if (is.null(point_pch)){
     point_pch = 16
@@ -864,7 +937,7 @@ plot.avlr = function(x, decomp = FALSE,
   if (is.null(point_cex)){
     point_cex = 1.25
   }
-  lines(x$av$levels, x$av$adev, type = "p", col = col_ad, pch = point_pch, cex = point_cex)
+  lines(x$av$levels, x$av$allan, type = "p", col = col_ad, pch = point_pch, cex = point_cex)
 
   if (show_scales){
     process_cols = col_decomp
@@ -873,11 +946,14 @@ plot.avlr = function(x, decomp = FALSE,
       if (!is.na(x$scales_used[i,1])){
         counter = counter + 1
         lines(x$av$levels[(x$scales_used[i,1]):(x$scales_used[i,2])],
-              x$av$adev[(x$scales_used[i,1]):(x$scales_used[i,2])], type = "p",
+              x$av$allan[(x$scales_used[i,1]):(x$scales_used[i,2])], type = "p",
               col = process_cols[counter], pch = point_pch, cex = point_cex)
       }
     }
   }
+
+  #recalculate win dim since added space for main title when plotting main plot
+  win_dim = par("usr")
 
   # Add Title
   x_vec = 10^c(win_dim[1], win_dim[2], win_dim[2], win_dim[1])
@@ -895,12 +971,13 @@ plot.avlr = function(x, decomp = FALSE,
 
   # Add legend
   CI_conf = .95
-  ad_title_part1 = "Empirical AD "
+  ad_title_part1 = "Empirical AV "
+
 
   if(decomp == TRUE){
     if (show_scales){
-      legend_names = c(as.expression(bquote(paste(.(ad_title_part1), hat(phi)))),
-                       as.expression(bquote(paste("CI(",hat(phi),", ",.(CI_conf),")"))),"Implied AD",
+      legend_names = c(as.expression(bquote(paste(.(ad_title_part1), hat(phi)^2))),
+                       as.expression(bquote(paste("CI(",hat(phi)^2,", ",.(CI_conf),")"))),"Implied AV",
                        x$process_desc, paste("Scales used for", x$process_desc))
       col_legend = c(col_ad, col_ci,"#F47F24",col_decomp, col_decomp)
       p_cex_legend = c(1.25, 3, 1.5,rep(NA,U), rep(1.35,U))
@@ -908,7 +985,7 @@ plot.avlr = function(x, decomp = FALSE,
       pch_legend = c(16,15, 1, rep(NA,U), rep(16,U))
     }else{
       legend_names = c(as.expression(bquote(paste(.(ad_title_part1), hat(phi)))),
-                       as.expression(bquote(paste("CI(",hat(phi),", ",.(CI_conf),")"))),"Implied AD",
+                       as.expression(bquote(paste("CI(",hat(phi)^2,", ",.(CI_conf),")"))),"Implied AV",
                        x$process_desc)
       col_legend = c(col_ad, col_ci,"#F47F24",col_decomp)
       p_cex_legend = c(1.25, 3, 1.5,rep(NA,U))
@@ -918,38 +995,40 @@ plot.avlr = function(x, decomp = FALSE,
 
   }else{
     if (show_scales){
-      legend_names = c(as.expression(bquote(paste(.(ad_title_part1), hat(phi)))),
-                       as.expression(bquote(paste("CI(",hat(phi),", ",.(CI_conf),")"))),"Implied AD",
+      legend_names = c(as.expression(bquote(paste(.(ad_title_part1), hat(phi)^2))),
+                       as.expression(bquote(paste("CI(",hat(phi)^2,", ",.(CI_conf),")"))),"Implied AV",
                        paste("Scales used for", x$process_desc))
       col_legend = c(col_ad, col_ci,"#F47F24", col_decomp)
       p_cex_legend = c(1.25, 3, 1.5, rep(1.35,U))
       lty_legend = c(1, NA, 1, rep(NA,U))
       pch_legend = c(16,15, 1, rep(16,U))
     }else{
-      legend_names = c(as.expression(bquote(paste(.(ad_title_part1), hat(phi)))),
-                       as.expression(bquote(paste("CI(",hat(phi),", ",.(CI_conf),")"))),"Implied AV")
+      legend_names = c(as.expression(bquote(paste(.(ad_title_part1), hat(phi)^2))),
+                       as.expression(bquote(paste("CI(",hat(phi)^2,", ",.(CI_conf),")"))),"Implied AV")
       col_legend = c(col_ad, col_ci,"#F47F24")
       p_cex_legend = c(1.25, 3, 1.5)
       lty_legend = c(1, NA)
       pch_legend = c(16,15,1)
     }
   }
+
+
   if (!is.na(legend_position)){
     if (legend_position == "topleft"){
       legend_position = 10^c(1.1*win_dim[1], 0.98*(win_dim[4] - 0.09*(win_dim[4] - win_dim[3])))
       legend(x = legend_position[1], y = legend_position[2],
              legend = legend_names, pch = pch_legend, lty = lty_legend,
-             col = col_legend, cex = 1, pt.cex = p_cex_legend, bty = "n")
+             col = col_legend, cex = text_legend_cex, pt.cex = p_cex_legend, bty = "n")
     }else{
       if (legend_position == "topright"){
         legend_position = 10^c(0.7*win_dim[2], 0.98*(win_dim[4] - 0.09*(win_dim[4] - win_dim[3])))
         legend(x = legend_position[1], y = legend_position[2],
                legend =legend_names, pch = pch_legend, lty = lty_legend,
-               col = col_legend, cex = 1, pt.cex = p_cex_legend, bty = "n")
+               col = col_legend, cex = text_legend_cex, pt.cex = p_cex_legend, bty = "n")
       }else{
         legend(legend_position,
                legend = legend_names, pch = pch_legend, lty = lty_legend,
-               col = col_legend, cex = 1, pt.cex = p_cex_legend, bty = "n")
+               col = col_legend, cex = text_legend_cex, pt.cex = p_cex_legend, bty = "n")
       }
     }
   }

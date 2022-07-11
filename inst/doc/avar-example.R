@@ -1,10 +1,10 @@
-## ----setup, include = FALSE----------------------------------------------
+## ----setup, include = FALSE---------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
 
-## ---- include=T----------------------------------------------------------
+## ---- include=T---------------------------------------------------------------
 library(avar)
 
 ## ---- fig.height = 7, fig.width = 7, fig.align = 'center', fig.cap = "Allan Variance Representation."----
@@ -20,7 +20,7 @@ allan_variance = avar(data, type = "mo")
 # Log-Log representation of the Allan Variance
 plot(allan_variance)
 
-## ---- warning = F--------------------------------------------------------
+## ---- warning = F-------------------------------------------------------------
 # Specify the scale at which we want to fit the WN and RW processes
 wn = 1:7
 rw = 13:15
@@ -33,12 +33,12 @@ fit
 plot(fit)
 plot(fit, decomp = TRUE)
 
-## ---- warning = F, eval = F----------------------------------------------
+## ---- warning = F, eval = F---------------------------------------------------
 #  # AVLR estimator with 95% confidence intervals
 #  fit_ci = avlr(allan_variance, wn = 1:7, rw = 13:15, ci = TRUE, B = 100)
 #  fit_ci$ci
 
-## ---- warning = F, echo = F, eval = T------------------------------------
+## ---- warning = F, echo = F, eval = T-----------------------------------------
 load("fit_ci.rda")
 fit_ci$ci
 
@@ -46,7 +46,7 @@ fit_ci$ci
 data("navchip_av")
 plot(navchip_av)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 fit2 = avlr(navchip_av, qn_gyro = 1:4, wn_gyro = 6:8, rw_gyro = 10:13,
            wn_acc = 1:6, rw_acc = 14:16)
 fit2

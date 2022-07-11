@@ -18,6 +18,7 @@
   ci_ad = NULL,
   point_cex = NULL,
   point_pch = NULL,
+  text_legend_cex = 1,
   ...
 )
 }
@@ -32,7 +33,7 @@
 
 \item{main}{A \code{string} that gives an overall title for the plot.}
 
-\item{col_ad}{A \code{string} that specifies the color of the line allan deviation line.}
+\item{col_ad}{A \code{string} that specifies the color of the line allan variance line.}
 
 \item{col_ci}{A \code{string} that specifies the color of the shaded area covered by the confidence intervals.}
 
@@ -48,13 +49,15 @@
 
 \item{point_pch}{A \code{double} that specifies the symbol type to be plotted.}
 
+\item{text_legend_cex}{A \code{double} that specifies the size of the legend text.}
+
 \item{...}{Additional arguments affecting the plot.}
 }
 \value{
 A plot of the Allan deviation and relative confidence interval for each scale.
 }
 \description{
-Displays a plot of Allan deviation with its corresponding pointwise confidence intervals.
+Displays a plot of Allan variance with its corresponding pointwise confidence intervals.
 }
 \examples{
 \donttest{

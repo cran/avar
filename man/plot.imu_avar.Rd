@@ -2,7 +2,7 @@
 % Please edit documentation in R/avar.r
 \name{plot.imu_avar}
 \alias{plot.imu_avar}
-\title{Plot Allan Deviation based on IMU Data}
+\title{Plot Allan Variance based on IMU Data}
 \usage{
 \method{plot}{imu_avar}(
   x,
@@ -28,7 +28,7 @@
 
 \item{main}{A \code{string} that gives an overall title for the plot.}
 
-\item{col_ad}{A \code{string} that specifies the color of the line allan deviation line.}
+\item{col_ad}{A \code{string} that specifies the color of the line allan variance line.}
 
 \item{col_ci}{A \code{string} that specifies the color of the shaded area covered by the confidence intervals.}
 
@@ -48,7 +48,7 @@
 A plot of the Allan deviation and relative confidence interval for each scale.
 }
 \description{
-Displays a plot of Allan deviation based on IMU data with its corresponding pointwise confidence intervals.
+Displays a plot of Allan variance based on IMU data with its corresponding pointwise confidence intervals.
 }
 \examples{
 data("navchip_av")
