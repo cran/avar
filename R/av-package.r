@@ -7,3 +7,4 @@
 #' @docType package
 #' @exportPattern ^[[:alpha:]]+
 NULL
+"_PACKAGE"

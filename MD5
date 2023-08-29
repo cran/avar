@@ -1,9 +1,9 @@
-9c8ef80aac81d54b64f5f5b3ea13356e *DESCRIPTION
+ae0591bb0f21bbabe44fbab6e6e607d8 *DESCRIPTION
 8f1a0e70c7c229b9a690cf50f5995243 *NAMESPACE
 379a3a00d4b6a9a6fe60025cc7a522e5 *NEWS.md
 3ba38502f36e6e6ca2a01ef741a09246 *R/AVNS_theo_covmat.R
 98d258f4bc84e2cba796bc2795270c83 *R/RcppExports.R
-12034183f12f7697299ef0b4e6a48f01 *R/av-package.r
+c66dc7286f1c0fd6c59f9e85cf862cce *R/av-package.r
 86b1d9e165d379f20d78377e52d2c532 *R/av_processes.R
 fd1dc3faa3b71027e29eeeccdd164ca4 *R/avar.r
 d59e61ed001e8268cf2c9a7ec52352ba *R/avlr.R
@@ -11,7 +11,7 @@ bcb1fd139ff22d882dfdeb49ff6b863e *R/data.R
 d22b575b400759723d2514ca4a5e75a2 *R/iswhole.R
 67c76571f845e267bc5fa8c880e621a8 *R/theo_MOAV_NOAV.R
 fcc7c10e6d08ecaa4a2ae46a7646e30b *README.md
-bba13e2027fcb1f63611598742eb1fac *build/vignette.rds
+fe852131fc0122eb94d6ac2e31ef09fd *build/vignette.rds
 c501466a0d1ea3ba6aac88401d1b5227 *data/adis_av.rda
 a5da4ca246b4c9e67d5355f6ea05496e *data/imar_av.rda
 0ddf7bb2b18d9f964c8f07bd870e14bd *data/kvh1750_av.rda
@@ -19,7 +19,7 @@ a5da4ca246b4c9e67d5355f6ea05496e *data/imar_av.rda
 0b584f3346875a4fcbea9766f7b7f0a1 *data/navchip_av.rda
 6a5946fc0e64508945345829aca3f0e8 *inst/doc/avar-example.R
 8531cc8d598fc9cad12b688cfb039e41 *inst/doc/avar-example.Rmd
-2a38205e232619aa50098f35b6af4e5b *inst/doc/avar-example.html
+635c81df264f316614944ccd8511ff80 *inst/doc/avar-example.html
 02ded0e0619ec60e5e69b887c1649203 *man/MOAV.Rd
 2a884d66fbd25fab0bcd5e1bfb9c2dc5 *man/NOAV.Rd
 4a03a6aa9a5d7510aef7e5eff5099e59 *man/adis_av.Rd
